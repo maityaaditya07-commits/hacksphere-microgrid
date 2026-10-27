@@ -1,0 +1,17 @@
+{
+  "command": "python3 app.py",
+  "build_path": "./",
+  "stack": "python_3_12",
+  "env_variables": {
+    "MG_ACCOUNTS_URL": "<Zoho accounts token URL, e.g. https://accounts.zoho.in/oauth/v2/token>",
+    "MG_CLIENT_ID": "<Self Client ID>",
+    "MG_CLIENT_SECRET": "<Self Client secret>",
+    "MG_REFRESH_TOKEN": "<refresh token>",
+    "MG_ENDPOINT_URL": "<published QuickML endpoint URL>",
+    "MG_ENDPOINT_KEY": "<QuickML endpoint key>",
+    "MG_ORG": "<Catalyst org id>",
+    "MG_ENV": "Development"
+  },
+  "memory": 256,
+  "scripts": {}
+}

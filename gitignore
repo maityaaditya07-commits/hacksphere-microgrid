@@ -1,0 +1,36 @@
+# secrets - never commit
+.env
+self_client.json
+app-config.json
+.catalystrc
+
+# libraries bundled for Catalyst (recreate with: pip install -r requirements.txt -t .)
+flask/
+flask-*/
+werkzeug/
+werkzeug-*/
+jinja2/
+jinja2-*/
+markupsafe/
+markupsafe-*/
+click/
+click-*/
+blinker/
+blinker-*/
+itsdangerous/
+itsdangerous-*/
+requests/
+requests-*/
+urllib3/
+urllib3-*/
+idna/
+idna-*/
+certifi/
+certifi-*/
+charset_normalizer/
+charset_normalizer-*/
+bin/
+__pycache__/
+*.pyc
+.DS_Store
+predictions.csv

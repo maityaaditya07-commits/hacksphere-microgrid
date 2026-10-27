@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microgrid Dispatch Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F2; --surface:#FFFFFF; --ink:#14252D; --muted:#5A6B73; --line:#D3DCDF;
+  --grid:#2B5C8F; --grid-bg:#E3EDF7; --store:#17805F; --store-bg:#DDF2EA;
+  --alert:#C2362B; --alert-bg:#FBE6E3; --amber:#9A6209; --amber-bg:#FBEFD5;
+  --focus:#0B57D0;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:18px 28px 10px;flex-wrap:wrap}
+h1{font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.9rem}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;padding:8px 28px 40px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:1fr;padding:8px 16px 32px}header{padding:16px}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel h2{font-size:1rem;margin:0 0 4px;font-weight:700}
+.panel p.hint{margin:0 0 14px;color:var(--muted);font-size:.85rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;font-size:.9rem}
+.btn:hover{background:#F4F7F8}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#22393F}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:3px}
+input[type=text],input[type=number],input[type=datetime-local]{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.readings{list-style:none;margin:0;padding:0;max-height:150px;overflow:auto;font-size:.82rem}
+.readings li{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.readings button{border:0;background:none;color:var(--alert);cursor:pointer;font-weight:700}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px}
+@media (max-width:760px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.kpi .lbl{font-size:.8rem;color:var(--muted);font-weight:600}
+.kpi .val{font-size:1.7rem;font-weight:800;letter-spacing:-.02em}
+.kpi .val small{font-size:.9rem;font-weight:600;color:var(--muted);margin-left:3px}
+.badge{display:inline-block;border-radius:8px;padding:8px 12px;font-weight:800;font-size:1rem;margin:4px 0 2px}
+.badge.grid{background:var(--grid-bg);color:var(--grid);border:2px solid var(--grid)}
+.badge.store{background:var(--store-bg);color:var(--store);border:2px solid var(--store)}
+.reason{font-size:.8rem;color:var(--muted)}
+.banner{border-radius:10px;padding:12px 16px;font-weight:600;border:1px solid}
+.banner.alert{background:var(--alert-bg);border-color:var(--alert);color:#8E241B}
+.banner.warn{background:var(--amber-bg);border-color:#D9A441;color:var(--amber)}
+.banner.ok{background:var(--store-bg);border-color:#8CCDB5;color:#0F5E46}
+.banner.err{background:var(--alert-bg);border-color:var(--alert);color:#8E241B}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.card h3{margin:0 0 2px;font-size:1rem;font-weight:700}
+.card .cap{margin:0 0 10px;color:var(--muted);font-size:.82rem}
+svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.78rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.strip{display:grid;gap:3px;margin-top:6px}
+.strip button{border:0;border-radius:4px;height:34px;cursor:pointer;color:#fff;font-size:.68rem;font-weight:700;padding:0}
+.strip button.grid{background:var(--grid)}
+.strip button.store{background:var(--store)}
+.strip button.sel{outline:3px solid var(--ink);outline-offset:1px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.78rem;color:var(--muted);font-weight:700}
+tr.sel td{background:#F1F6F7}
+td.num,th.num{text-align:right}
+.tag{border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700}
+.tag.grid{background:var(--grid-bg);color:var(--grid)}
+.tag.store{background:var(--store-bg);color:var(--store)}
+.tag.alert{background:var(--alert);color:#fff}
+.log{list-style:none;margin:0;padding:0;font-size:.85rem}
+.log li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap}
+.log time{color:var(--muted);min-width:150px}
+.empty{color:var(--muted);padding:40px 10px;text-align:center}
+.foot{color:var(--muted);font-size:.78rem;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Microgrid Dispatch Console</h1>
+    <div class="sub">24-hour demand forecast and grid / battery switching plan</div>
+  </div>
+  <div class="sub" id="modelNote">Forecast model: Zoho Catalyst QuickML</div>
+</header>
+
+<div class="layout">
+  <aside class="panel" aria-label="Telemetry input">
+    <h2>Telemetry input</h2>
+    <p class="hint">Load a sample day, upload a CSV, or add hourly readings by hand.</p>
+    <div class="stack">
+      <button class="btn" id="btnSample" type="button">Load sample day</button>
+      <label class="btn" for="csvFile" style="margin:0">Upload CSV file</label>
+      <input id="csvFile" type="file" accept=".csv,text/csv" hidden>
+      <div class="foot">CSV columns: timestamp, ambient_temp_c, humidity_pct, solar_irradiance_wm2</div>
+    </div>
+    <hr>
+    <h2>Add a reading</h2>
+    <div class="stack">
+      <div><label for="fTime">Hour</label><input id="fTime" type="datetime-local" step="3600"></div>
+      <div class="row2">
+        <div><label for="fTemp">Temp (°C)</label><input id="fTemp" type="number" step="0.1"></div>
+        <div><label for="fHum">Humidity (%)</label><input id="fHum" type="number" step="0.1" min="0" max="100"></div>
+      </div>
+      <div><label for="fSol">Solar irradiance (W/m²)</label><input id="fSol" type="number" step="1" min="0"></div>
+      <button class="btn" id="btnAdd" type="button">Add reading</button>
+      <ul class="readings" id="readings" aria-label="Added readings"></ul>
+    </div>
+    <hr>
+    <div><label for="fSoc">Starting battery charge (%)</label><input id="fSoc" type="number" value="80" min="0" max="100"></div>
+    <div style="height:10px"></div>
+    <button class="btn primary" id="btnRun" type="button" style="width:100%" disabled>Run forecast</button>
+    <div class="foot" id="srcNote">No data loaded yet.</div>
+  </aside>
+
+  <main class="main" aria-live="polite">
+    <div id="banners"></div>
+    <div id="results"><div class="card empty">Load a sample day to see the forecast, grid state and battery plan.</div></div>
+  </main>
+</div>
+
+<script>
+"use strict";
+const GRID = "Main Grid Mode", STORE = "Renewable Storage Mode";
+const $ = (id) => document.getElementById(id);
+let manualRows = [];      // rows typed in by hand
+let loadedRows = null;    // rows from sample
+let csvFile = null;       // uploaded CSV
+let result = null, sel = 0;
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function hh(ts){ return ts.slice(11,16); }
+function fmtDay(ts){ return ts.slice(0,10); }
+
+/* ---------- input handling ---------- */
+function renderReadings(){
+  const ul = $("readings"); ul.innerHTML = "";
+  manualRows.forEach((r,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${esc(r.timestamp.slice(5,16))} · ${esc(r.ambient_temp_c)}°C</span><button type="button" aria-label="Remove reading ${i+1}">Remove</button>`;
+    li.querySelector("button").onclick = ()=>{ manualRows.splice(i,1); renderReadings(); updateRunState(); };
+    ul.appendChild(li);
+  });
+}
+function updateRunState(){
+  const n = csvFile ? "uploaded file" : loadedRows ? loadedRows.length + " sample hours" : manualRows.length ? manualRows.length + " manual readings" : "";
+  $("btnRun").disabled = !n;
+  $("srcNote").textContent = n ? "Ready: " + n + "." : "No data loaded yet.";
+}
+$("btnSample").onclick = async ()=>{
+  try{
+    const r = await fetch("/api/sample"); const d = await r.json();
+    if(!r.ok) throw new Error(d.error || "Could not load sample");
+    loadedRows = d.rows; csvFile = null; manualRows = []; renderReadings(); updateRunState(); run();
+  }catch(e){ showError(e.message); }
+};
+$("csvFile").onchange = (ev)=>{
+  const f = ev.target.files[0]; if(!f) return;
+  csvFile = f; loadedRows = null; manualRows = []; renderReadings(); updateRunState(); run();
+};
+$("btnAdd").onclick = ()=>{
+  const t = $("fTime").value, tp = $("fTemp").value, hm = $("fHum").value, so = $("fSol").value;
+  if(!t || tp==="" || hm==="" || so===""){ showError("Fill in the hour, temperature, humidity and solar irradiance first."); return; }
+  loadedRows = null; csvFile = null;
+  manualRows.push({timestamp: t.replace("T"," ") + ":00", ambient_temp_c: +tp, humidity_pct: +hm, solar_irradiance_wm2: +so});
+  clearBanners(); renderReadings(); updateRunState();
+};
+$("btnRun").onclick = run;
+
+/* ---------- API ---------- */
+async function run(){
+  clearBanners();
+  const soc = $("fSoc").value === "" ? 80 : +$("fSoc").value;
+  $("btnRun").disabled = true; $("btnRun").textContent = "Forecasting…";
+  try{
+    let resp;
+    if(csvFile){
+      const fd = new FormData(); fd.append("file", csvFile); fd.append("initial_soc_pct", soc);
+      resp = await fetch("/api/forecast", {method:"POST", body: fd});
+    } else {
+      const rows = loadedRows || manualRows;
+      resp = await fetch("/api/forecast", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({rows, initial_soc_pct: soc})});
+    }
+    const data = await resp.json();
+    if(!resp.ok) throw new Error(data.error || "Forecast failed");
+    result = data; sel = 0; render();
+  }catch(e){ showError(e.message); }
+  finally{ $("btnRun").textContent = "Run forecast"; updateRunState(); }
+}
+function clearBanners(){ $("banners").innerHTML = ""; }
+function showError(msg){ $("banners").innerHTML = `<div class="banner err" role="alert">${esc(msg)}</div>`; }
+
+/* ---------- rendering ---------- */
+function modeClass(m){ return m === STORE ? "store" : "grid"; }
+
+function render(){
+  const plan = result.plan, sm = result.summary, n = plan.length;
+  // banners
+  let b = "";
+  if(sm.overload_hours > 0){
+    const first = sm.overload_timestamps[0];
+    b += `<div class="banner alert" role="alert">Critical overload alert: ${sm.overload_hours} of ${n} hours reach 200 kW or more (first at ${esc(hh(first))} on ${esc(fmtDay(first))}). Peak forecast ${sm.peak_kw.toFixed(1)} kW.</div>`;
+  } else {
+    b += `<div class="banner ok">No overload expected. Peak forecast ${sm.peak_kw.toFixed(1)} kW, below the 200 kW limit.</div>`;
+  }
+  if(sm.battery_empty_hours > 0){
+    b += `<div class="banner warn" role="alert" style="margin-top:8px">Battery runs empty in ${sm.battery_empty_hours} hour(s) of this window. Renewable Storage Mode is still signalled by the rules, but stored energy will not cover the full load.</div>`;
+  }
+  const c = result.cleaning, notes = [];
+  if(c.rows_dropped_bad_timestamp) notes.push(c.rows_dropped_bad_timestamp + " row(s) dropped for an unreadable timestamp");
+  if(c.rows_dropped_duplicate_timestamp) notes.push(c.rows_dropped_duplicate_timestamp + " duplicate hour(s) removed");
+  if(c.values_filled) notes.push(c.values_filled + " missing value(s) filled with the column median");
+  if(c.rows_truncated) notes.push(c.rows_truncated + " row(s) beyond the 168-hour limit ignored");
+  if(notes.length) b += `<div class="banner warn" style="margin-top:8px">Data cleaned: ${esc(notes.join("; "))}.</div>`;
+  $("banners").innerHTML = b;
+
+  $("results").innerHTML = `
+    <div class="kpis" id="kpis"></div>
+    <div class="card" style="margin-top:16px">
+      <h3>Predicted load curve</h3>
+      <p class="cap">Hourly demand forecast with the switching thresholds. Select an hour on the chart or the strip below.</p>
+      <div id="chart"></div>
+      <div class="legend">
+        <span><i style="background:var(--grid)"></i>Main Grid hour</span>
+        <span><i style="background:var(--store)"></i>Renewable Storage hour</span>
+        <span><i style="background:#fff;border:2px solid var(--alert)"></i>Overload (200 kW or more)</span>
+        <span><i style="background:#E9EEF1;border-radius:2px"></i>Evening window 18:00 to 22:00</span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Power source by hour</h3>
+      <p class="cap">Blue hours run on the main grid, green hours on battery storage.</p>
+      <div class="strip" id="strip" style="grid-template-columns:repeat(${n},minmax(0,1fr))"></div>
+      <div style="height:14px"></div>
+      <h3>Battery state of charge</h3>
+      <p class="cap">Simulated: discharges in Renewable Storage Mode, recharges on Main Grid.</p>
+      <div id="soc"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Hourly dispatch signals</h3>
+      <div class="tablewrap"><table><thead><tr><th>Hour</th><th class="num">Demand (kW)</th><th>Power source</th><th>Alert</th><th class="num">Battery</th></tr></thead><tbody id="rows"></tbody></table></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>System log</h3>
+      <ul class="log" id="log"></ul>
+    </div>
+    <p class="foot">Battery model assumptions: 3,000 kWh capacity, discharge up to 150 kW in Renewable Storage Mode, recharge 100 kW on Main Grid. Grid mode always follows the stated rules.</p>`;
+  drawAll();
+}
+
+function drawAll(){
+  const plan = result.plan, p = plan[sel];
+  const cls = modeClass(p.grid_mode);
+  $("kpis").innerHTML = `
+    <div class="kpi"><div class="lbl">Active power source · ${esc(hh(p.timestamp))}</div>
+      <span class="badge ${cls}">${esc(p.grid_mode)}</span><div class="reason">${esc(p.reason)}</div></div>
+    <div class="kpi"><div class="lbl">Predicted load</div><div class="val">${p.predicted_kw.toFixed(1)}<small>kW</small></div></div>
+    <div class="kpi"><div class="lbl">Battery charge</div><div class="val">${p.soc_pct.toFixed(0)}<small>%</small></div>${p.battery_empty?'<div class="reason" style="color:var(--amber)">Battery empty this hour</div>':p.battery_low?'<div class="reason" style="color:var(--amber)">Low charge</div>':''}</div>
+    <div class="kpi"><div class="lbl">Overload alert</div><div class="val" style="color:${p.overload?'var(--alert)':'var(--store)'}">${p.overload?'Critical':'Clear'}</div></div>`;
+  drawChart(); drawStrip(); drawSoc(); drawTable(); drawLog();
+}
+
+function drawChart(){
+  const plan = result.plan, n = plan.length;
+  const W = 900, H = 340, L = 48, R = 14, T = 14, B = 34;
+  const maxV = Math.max(240, Math.ceil(Math.max(...plan.map(r=>r.predicted_kw))/20)*20 + 20);
+  const x = (i)=> L + (n===1 ? (W-L-R)/2 : i*(W-L-R)/(n-1));
+  const y = (v)=> T + (1 - v/maxV)*(H-T-B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted hourly demand in kilowatts">`;
+  // evening window shading
+  const step = n===1 ? 30 : (W-L-R)/(n-1);
+  plan.forEach((r,i)=>{ if(r.hour>=18 && r.hour<=22) s += `<rect x="${x(i)-step/2}" y="${T}" width="${step}" height="${H-T-B}" fill="#E9EEF1"/>`; });
+  for(let v=0; v<=maxV; v+=40){ s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#E1E7E9"/><text x="${L-8}" y="${y(v)+4}" font-size="11" fill="#5A6B73" text-anchor="end">${v}</text>`; }
+  s += `<line x1="${L}" x2="${W-R}" y1="${y(160)}" y2="${y(160)}" stroke="#2B5C8F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${L+6}" y="${y(160)-5}" font-size="11" fill="#2B5C8F" text-anchor="start" font-weight="700">160 kW: battery above this</text>`;
+  s += `<line x1="${L}" x2="${W-R}" y1="${y(200)}" y2="${y(200)}" stroke="#C2362B" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${L+6}" y="${y(200)-5}" font-size="11" fill="#C2362B" text-anchor="start" font-weight="700">200 kW: critical overload</text>`;
+  s += `<text x="12" y="${T+8}" font-size="11" fill="#5A6B73" transform="rotate(-90 12 ${(H-B)/2})" text-anchor="middle">kW</text>`;
+  const every = n>30 ? Math.ceil(n/24) : (n>14 ? 2 : 1);
+  plan.forEach((r,i)=>{ if(i%every===0) s += `<text x="${x(i)}" y="${H-12}" font-size="11" fill="#5A6B73" text-anchor="middle">${esc(hh(r.timestamp))}</text>`; });
+  s += `<line x1="${x(sel)}" x2="${x(sel)}" y1="${T}" y2="${H-B}" stroke="#14252D" stroke-width="1.5"/>`;
+  s += `<path d="${plan.map((r,i)=>(i?"L":"M")+x(i)+" "+y(r.predicted_kw)).join(" ")}" fill="none" stroke="#14252D" stroke-width="2.2" stroke-linejoin="round"/>`;
+  plan.forEach((r,i)=>{
+    const col = r.grid_mode===STORE ? "#17805F" : "#2B5C8F";
+    s += r.overload ? `<circle cx="${x(i)}" cy="${y(r.predicted_kw)}" r="7" fill="#fff" stroke="#C2362B" stroke-width="2.5"/><circle cx="${x(i)}" cy="${y(r.predicted_kw)}" r="3.5" fill="${col}"/>`
+                    : `<circle cx="${x(i)}" cy="${y(r.predicted_kw)}" r="${i===sel?6:4}" fill="${col}"/>`;
+  });
+  plan.forEach((r,i)=>{ s += `<rect x="${x(i)-step/2}" y="${T}" width="${step}" height="${H-T-B}" fill="transparent" style="cursor:pointer" data-i="${i}"><title>${esc(hh(r.timestamp))}: ${r.predicted_kw.toFixed(1)} kW, ${esc(r.grid_mode)}</title></rect>`; });
+  s += `</svg>`;
+  $("chart").innerHTML = s;
+  $("chart").querySelectorAll("rect[data-i]").forEach(el=> el.onclick = ()=>{ sel = +el.dataset.i; drawAll(); });
+}
+
+function drawStrip(){
+  const plan = result.plan, el = $("strip"); el.innerHTML = "";
+  plan.forEach((r,i)=>{
+    const b = document.createElement("button");
+    b.type = "button"; b.className = modeClass(r.grid_mode) + (i===sel?" sel":"");
+    b.textContent = plan.length <= 30 ? String(r.hour).padStart(2,"0") : "";
+    b.setAttribute("aria-label", `${hh(r.timestamp)}: ${r.grid_mode}${r.overload?", critical overload":""}`);
+    b.title = `${hh(r.timestamp)} · ${r.grid_mode}`;
+    b.onclick = ()=>{ sel = i; drawAll(); };
+    el.appendChild(b);
+  });
+}
+
+function drawSoc(){
+  const plan = result.plan, n = plan.length;
+  const W = 900, H = 130, L = 48, R = 14, T = 8, B = 22;
+  const x = (i)=> L + (n===1 ? (W-L-R)/2 : i*(W-L-R)/(n-1));
+  const y = (v)=> T + (1 - v/100)*(H-T-B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Battery state of charge">`;
+  [0,50,100].forEach(v=>{ s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#E1E7E9"/><text x="${L-8}" y="${y(v)+4}" font-size="11" fill="#5A6B73" text-anchor="end">${v}%</text>`; });
+  s += `<line x1="${L}" x2="${W-R}" y1="${y(20)}" y2="${y(20)}" stroke="#9A6209" stroke-dasharray="4 4"/><text x="${W-R-4}" y="${y(20)-4}" font-size="10" fill="#9A6209" text-anchor="end">20% low</text>`;
+  const pts = plan.map((r,i)=>x(i)+" "+y(r.soc_pct));
+  s += `<path d="M${x(0)} ${y(0)} L${pts.join(" L")} L${x(n-1)} ${y(0)} Z" fill="#17805F" opacity=".14"/>`;
+  s += `<path d="M${pts.join(" L")}" fill="none" stroke="#17805F" stroke-width="2.2"/>`;
+  s += `<circle cx="${x(sel)}" cy="${y(plan[sel].soc_pct)}" r="5" fill="#17805F" stroke="#fff" stroke-width="2"/>`;
+  s += `</svg>`;
+  $("soc").innerHTML = s;
+}
+
+function drawTable(){
+  $("rows").innerHTML = result.plan.map((r,i)=>`<tr class="${i===sel?'sel':''}" data-i="${i}" style="cursor:pointer">
+    <td>${esc(r.timestamp.slice(5,16))}</td><td class="num">${r.predicted_kw.toFixed(1)}</td>
+    <td><span class="tag ${modeClass(r.grid_mode)}">${esc(r.grid_mode)}</span></td>
+    <td>${r.overload?'<span class="tag alert">Critical overload</span>':''}</td>
+    <td class="num">${r.soc_pct.toFixed(0)}%</td></tr>`).join("");
+  $("rows").querySelectorAll("tr").forEach(tr=> tr.onclick = ()=>{ sel = +tr.dataset.i; drawAll(); });
+}
+
+function drawLog(){
+  const plan = result.plan, sm = result.summary, items = [];
+  sm.events.forEach(e=> items.push({t:e.timestamp, text:`${e.signal} (${e.reason})`}));
+  let i = 0;
+  while(i < plan.length){
+    if(plan[i].overload){
+      let j = i; while(j+1 < plan.length && plan[j+1].overload) j++;
+      const hours = j - i + 1, peak = Math.max(...plan.slice(i, j+1).map(r=>r.predicted_kw));
+      items.push({t:plan[i].timestamp, text: hours === 1
+        ? `Critical overload alert at ${hh(plan[i].timestamp)} (${peak.toFixed(1)} kW)`
+        : `Critical overload alert from ${hh(plan[i].timestamp)} to ${hh(plan[j].timestamp)} (${hours} hours, peak ${peak.toFixed(1)} kW)`});
+      i = j + 1;
+    } else i++;
+  }
+  items.sort((a,b)=> a.t < b.t ? -1 : a.t > b.t ? 1 : 0);
+  $("log").innerHTML = items.map(it=>`<li><time>${esc(it.t.slice(0,16))}</time><span>${esc(it.text)}</span></li>`).join("");
+}
+
+updateRunState();
+</script>
+</body>
+</html>
